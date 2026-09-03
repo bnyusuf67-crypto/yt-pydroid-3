@@ -16,7 +16,7 @@ FETCH_TIMEOUT = 15
 
 # GITHUB BİLGİLERİNİZ
 GITHUB_USER = "KULLANICI_ADINIZ"
-GITHUB_REPO = "youtube-iptv"
+GITHUB_REPO = "pydroid-yt-canli"
 GITHUB_TOKEN = "ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"  # Personal Access Token
 BRANCH = "main"
 
@@ -75,12 +75,21 @@ def ensure_ytdlp():
 # ==================== YTDLP DUMP-SINGLE-JSON & M3U8 ====================
 
 def get_m3u8_from_json(ytdlp_path, youtube_url):
-    """yt-dlp --dump-single-json ile yayını analiz eder."""
+    """yt-dlp --dump-single-json ile yayını analiz eder ve regex ile manifest yakalar."""
     try:
         cmd = [ytdlp_path, "--dump-single-json", "--no-warnings", youtube_url]
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=25)
         
         if result.returncode == 0 and result.stdout:
+            # ÖNCE REGEX İLE DOĞRUDAN ARAMA YAPALIM (En kesin çözüm)
+            manifest_pattern = r'https://manifest\.googlevideo\.com/api/manifest/hls_variant[^\s\"\\]+'
+            match = re.search(manifest_pattern, result.stdout)
+            if match:
+                # URL içindeki kaçış karakterlerini (escape) temizleyelim
+                found_url = match.group(0).replace(r'\u0026', '&').replace('\\/', '/')
+                return found_url
+
+            # Eğer regex ile doğrudan bulunamazsa mevcut JSON mantığına başvuralım
             data = json.loads(result.stdout)
             manifest = data.get("manifest_url")
             if manifest and ".m3u8" in manifest:
@@ -91,11 +100,18 @@ def get_m3u8_from_json(ytdlp_path, youtube_url):
                 proto = f.get("protocol", "")
                 ext = f.get("ext", "")
                 url = f.get("url", "")
+                
+                # Formatlar içinde de regex arayabiliriz
+                match_f = re.search(manifest_pattern, url)
+                if match_f:
+                    return match_f.group(0).replace(r'\u0026', '&').replace('\\/', '/')
+                    
                 if proto == "m3u8_native" or ext == "m3u8" or ".m3u8" in url:
                     return url
     except Exception:
         pass
     return None
+
 
 def fetch_m3u8_content(m3u8_url):
     """M3U8 içeriğini çeker ve doğrular."""
