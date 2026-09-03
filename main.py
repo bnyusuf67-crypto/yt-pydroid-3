@@ -14,7 +14,7 @@ from datetime import datetime
 
 # -------------------- REPO VE GİT AYARLARI --------------------
 # Standart ve güvenli repo URL'si
-GITHUB_REPO_URL = "https://github.com/KULLANICI_ADI/youtube-iptv.git"
+GITHUB_REPO_URL = "https://github.com/bnyusuf67-crypto/youtube-iptv.git"
 
 # -------------------- KANAL LİSTESİ --------------------
 kanallar = [
