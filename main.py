@@ -24,7 +24,7 @@ kanallar = [
     {"slug": "ahaber", "name": "A Haber", "youtube_url": "https://www.youtube.com/@Ahaber/live"},
     {"slug": "haberturk", "name": "Haber Turk", "youtube_url": "https://www.youtube.com/@haberturktv/live"},
     {"slug": "halktv", "name": "Halk TV", "youtube_url": "https://www.youtube.com/@Halktvkanali/live"},
-    {"slug": "sozcutelevizyonu", "name": "Sozcu TV", "youtube_url": "https://www.youtube.com/@sozcutelevizyonu/live"},
+    {"slug": "sozcutelevizyonu", "name": "Sozcu TV", "youtube_url": "https://www.youtube.com/watch?v=ztmY_cCtUl0"},
     {"slug": "tgrthaber", "name": "TGRT Haber", "youtube_url": "https://www.youtube.com/@tgrthaber/live"},
     {"slug": "flashhaber", "name": "Flash Haber", "youtube_url": "https://www.youtube.com/@flashhabertv/live"},
     {"slug": "haberglobal", "name": "Haber Global", "youtube_url": "https://www.youtube.com/@haberglobal/live"},
