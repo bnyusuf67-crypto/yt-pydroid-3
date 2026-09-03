@@ -20,7 +20,7 @@ GITHUB_REPO = "youtube-iptv"
 GITHUB_TOKEN = "ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"  # Personal Access Token
 BRANCH = "main"
 
-# KANAL LİSTESİ (YZ'nin verdiği linklerden birkaçı canlı olanlarla restore edildi.)
+# KANAL LİSTESİ
 CHANNELS = [
     {"name": "TRT Haber", "logo": "https://upload.wikimedia.org/wikipedia/commons/2/29/TRT_Haber_logo.png", "group": "Haber", "url": "https://www.youtube.com/@trthaber/live"},
     {"name": "CNN Turk", "logo": "https://upload.wikimedia.org/wikipedia/commons/b/b2/CNN_Turk_logo.png", "group": "Haber", "url": "https://www.youtube.com/@cnnturk/live"},
@@ -29,7 +29,7 @@ CHANNELS = [
     {"name": "Haber Turk", "logo": "https://upload.wikimedia.org/wikipedia/commons/0/07/Haberturk_TV_logo.png", "group": "Haber", "url": "https://www.youtube.com/@HaberturkTV/live"},
     {"name": "Halk TV", "logo": "https://upload.wikimedia.org/wikipedia/commons/d/dc/Halk_TV_logo.png", "group": "Haber", "url": "https://www.youtube.com/@Halktvkanali/live"},
     {"name": "Sozcu TV", "logo": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Sozcu_TV_logo.png", "group": "Haber", "url": "https://www.youtube.com/watch?v=ztmY_cCtUl0"},
-    {"name": "TGRT Haber", "logo": "https://upload.wikimedia.org/wikipedia/commons/c/c5/TGRT_Haber_logo.png", "group": "Haber", "url": "https://www.youtube.com/@tgrthaber/live"},
+    {"name": "TGRT Haber", "logo": "https://upload.wikimedia.org/wikipedia/commons/c/c5/TGRT_Haber_logo.png", "group": "Haber", "url": "https://www.youtube.com/@tgrthabertv/live"},
     {"name": "Flash Haber", "logo": "https://upload.wikimedia.org/wikipedia/commons/0/08/Flash_Haber_TV_logo.png", "group": "Haber", "url": "https://www.youtube.com/@FlashHaberTV/live"},
     {"name": "Haber Global", "logo": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Haber_Global_logo.png", "group": "Haber", "url": "https://www.youtube.com/@haberglobal/live"},
     {"name": "TV 100", "logo": "https://upload.wikimedia.org/wikipedia/commons/7/7b/TV100_logo.png", "group": "Haber", "url": "https://www.youtube.com/@tv100/live"},
@@ -38,7 +38,7 @@ CHANNELS = [
     {"name": "KRT TV", "logo": "https://upload.wikimedia.org/wikipedia/commons/2/23/KRT_TV_logo.png", "group": "Haber", "url": "https://www.youtube.com/@krttv/live"},
     {"name": "Ulusal Kanal", "logo": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Ulusal_Kanal_logo.png", "group": "Haber", "url": "https://www.youtube.com/@UlusalKanalTV/live"},
     {"name": "Ulke TV", "logo": "https://upload.wikimedia.org/wikipedia/commons/e/e3/Ulke_TV_logo.png", "group": "Haber", "url": "https://www.youtube.com/@ulketv/live"},
-    {"name": "Eko Turk", "logo": "https://upload.wikimedia.org/wikipedia/commons/5/52/Ekoturk_logo.png", "group": "Ekonomi", "url": "https://www.youtube.com/@ekoturktv/live"},
+    {"name": "Eko Turk", "logo": "https://upload.wikimedia.org/wikipedia/commons/5/52/Ekoturk_logo.png", "group": "Ekonomi", "url": "https://www.youtube.com/@Ekoturktv/live"},
     {"name": "24 TV", "logo": "https://upload.wikimedia.org/wikipedia/commons/1/14/24_TV_logo.png", "group": "Haber", "url": "https://www.youtube.com/@YirmidortTV/live"},
     {"name": "A Spor", "logo": "https://upload.wikimedia.org/wikipedia/commons/b/b9/A_Spor_logo.png", "group": "Spor", "url": "https://www.youtube.com/@aspor/live"},
     {"name": "HT Spor", "logo": "https://upload.wikimedia.org/wikipedia/commons/5/5f/HT_Spor_logo.png", "group": "Spor", "url": "https://www.youtube.com/@HTSpor/live"},
@@ -50,7 +50,7 @@ CHANNELS = [
 # ==================== WEB BINARY İNDİRİCİSİ ====================
 
 def ensure_ytdlp():
-    """yt-dlp binary dosyasını kontrol eder veya indirir."""
+    """yt-dlp binary dosyasını indirir ve hazırlar."""
     ytdlp_bin = shutil.which("yt-dlp")
     if ytdlp_bin:
         return ytdlp_bin
@@ -72,33 +72,33 @@ def ensure_ytdlp():
         print(f"❌ 'yt-dlp' indirilemedi: {e}")
         return None
 
-# ==================== MANIFEST & HLS VARIANT AYRIŞTIRMA ====================
+# ==================== YTDLP DUMP-SINGLE-JSON & M3U8 ====================
 
-def get_variant_m3u8_url(ytdlp_path, youtube_url):
-    """
-    yt-dlp ile JSON verisini çeker. Master manifest içindeki doğrudan oynatılabilir
-    HLS variant (çözünürlük/stream) URL'sini elde eder (.ts parçaları içermez).
-    """
+def get_m3u8_from_json(ytdlp_path, youtube_url):
+    """yt-dlp --dump-single-json ile yayını analiz eder."""
     try:
         cmd = [ytdlp_path, "--dump-single-json", "--no-warnings", youtube_url]
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=25)
         
         if result.returncode == 0 and result.stdout:
             data = json.loads(result.stdout)
-            
-            Doğrudan master manifest URL'si
             manifest = data.get("manifest_url")
             if manifest and ".m3u8" in manifest:
                 return manifest
+                
+            formats = data.get("formats", [])
+            for f in reversed(formats):
+                proto = f.get("protocol", "")
+                ext = f.get("ext", "")
+                url = f.get("url", "")
+                if proto == "m3u8_native" or ext == "m3u8" or ".m3u8" in url:
+                    return url
     except Exception:
         pass
     return None
 
 def fetch_m3u8_content(m3u8_url):
-    """
-    Elde edilen HLS variant M3U8 URL'sine istek atıp içeriği metin olarak indirir.
-    .ts parçalarını ayıklamak yerine yayın bilgisinin geçerliliğini doğrular.
-    """
+    """M3U8 içeriğini çeker ve doğrular."""
     try:
         req = urllib.request.Request(m3u8_url, headers={'User-Agent': USER_AGENT})
         with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT) as response:
@@ -115,10 +115,10 @@ def safe_filename(name):
         filename = filename.replace(tr, en)
     return re.sub(r'[^a-z0-9_]', '', filename)
 
-# ==================== GITHUB REST API UPLOAD ====================
+# ==================== PURE PYTHON GITHUB REST API PUSH ====================
 
 def github_upload_file(file_path):
-    """Hazırlanan M3U ve M3U8 dosyalarını doğrudan GitHub REST API ile depoya yükler."""
+    """Git binary'sine ihtiyaç duymadan GitHub REST API üzerinden dosyayı push eder."""
     url = f"https://api.github.com/repos/{GITHUB_USER}/{GITHUB_REPO}/contents/{file_path}"
     
     with open(file_path, "rb") as f:
@@ -164,7 +164,7 @@ def github_upload_file(file_path):
         print(f"  ❌ {file_path} yüklenemedi: {e}")
 
 def push_all_to_github():
-    """Tüm güncellenen dosyaları GitHub reposuna gönderir."""
+    """Tüm güncellenen dosyaları GitHub'a gönderir."""
     print("\n🚀 GitHub API ile Senkronizasyon Başlatılıyor...")
     
     if os.path.exists(PLAYLIST_FILE):
@@ -194,25 +194,22 @@ def run_update():
     for channel in CHANNELS:
         print(f"➡️  {channel['name']} ... ", end="", flush=True)
         
-        # 1. Manifest / HLS variant m3u8 URL'sini al
-        m3u8_variant_url = get_variant_m3u8_url(ytdlp_path, channel['url'])
+        m3u8_url = get_m3u8_from_json(ytdlp_path, channel['url'])
         
-        if m3u8_variant_url:
-            # 2. HLS variant URL'sinin içeriğini web'den indir
-            m3u8_content = fetch_m3u8_content(m3u8_variant_url)
+        if m3u8_url:
+            m3u8_content = fetch_m3u8_content(m3u8_url)
             
             clean_name = safe_filename(channel['name'])
             stream_filename = f"{clean_name}.m3u8"
             stream_filepath = os.path.join(STREAMS_DIR, stream_filename)
 
-            # M3U8 dosyasını yerel yerleşkeye yaz
             with open(stream_filepath, "w", encoding="utf-8") as f:
                 if m3u8_content:
                     f.write(m3u8_content)
                 else:
                     f.write("#EXTM3U\n")
                     f.write(f"#EXT-X-STREAM-INF:PROGRAM-ID=1,NAME=\"{channel['name']}\"\n")
-                    f.write(f"{m3u8_variant_url}\n")
+                    f.write(f"{m3u8_url}\n")
 
             extinf = f'#EXTINF:-1 tvg-logo="{channel["logo"]}" group-title="{channel["group"]}",{channel["name"]}\n'
             playlist_lines.append(extinf)
@@ -221,13 +218,11 @@ def run_update():
         else:
             print("❌ BAŞARISIZ (Akış bulunamadı)")
 
-    # Ana playlist.m3u oluştur
     with open(PLAYLIST_FILE, "w", encoding="utf-8") as f:
         f.writelines(playlist_lines)
 
     print("\n📁 Güncelleme yerel olarak kaydedildi.")
 
-    # GitHub REST API Push
     push_all_to_github()
 
 if __name__ == "__main__":
